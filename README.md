@@ -7,7 +7,7 @@ Some code for pygame widgets like bar, label, and button. W.I.P.
   - Icon
   - Label
   - Backdrop
--   Left To Do:
+- Left To Do:
   - Non-Rectangle Bar.
   - Transperncy mechanic for bar.
   - Make draw location held in a non rectangle and be drawn to a non rectangle.
