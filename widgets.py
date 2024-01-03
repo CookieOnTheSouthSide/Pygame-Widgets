@@ -1,13 +1,32 @@
 import pygame
+import pygame.gfxdraw
 
 
-# A simple button class with no support for images.
+
+# Button with image. 
+class ImageButton:
+    def __init__(self, pos, image, function=lambda: print("No Command Assigned!")):
+        self.pos = pos
+        self.image = pygame.image.load(image).convert_alpha()
+        self.rect = self.image.get_rect(topleft=self.pos)
+        
+        self.function = function
+    
+    def check_press(self, mouse_pos):
+        if self.rect.collidepoint(mouse_pos):
+            self.function()
+    
+    def render(self, surface):
+        surface.blit(self.image, self.pos)
+
+
+# A button that can recieve input and do something. Can also check if hovering to change color. 
 class Button:
-    def __init__(self, pos, width, height, color=(255, 255, 255), hovering_color=(124, 124, 124), command=lambda: print("No Command(Function) Assigned!"), outline=True, outline_color=(0, 0, 0), text=None, text_color=(0, 0, 0), text_size=20, bold=False, italic=False):
+    def __init__(self, pos, width, height, color=(255, 255, 255), hovering_color=(124, 124, 124), function=lambda: print("No Command(Function) Assigned!"), outline=True, outline_color=(0, 0, 0), text=None, text_color=(0, 0, 0), text_size=20, bold=False, italic=False, alpha=255):
         # The rectangle
         self.pos = pygame.math.Vector2(pos)
-        self.rect = pygame.Rect(self.pos[0], self.pos[1], width, height)
-        self.rect.topleft = (self.pos[0], self.pos[1])
+        self.alpha = alpha
+        self.rect = pygame.Rect(*self.pos, width, height)
         
         # Text
         if not (text is None):
@@ -22,11 +41,11 @@ class Button:
         self.outline = outline
         self.outline_color = outline_color
         
-        self.command = command
+        self.function = function
         
-    def check_input(self, mouse_pos):
+    def check_press(self, mouse_pos):
         if self.rect.collidepoint(mouse_pos):
-            self.command()
+            self.function()
 
     def check_hovering(self, mouse_pos):
         if self.rect.collidepoint(mouse_pos):
@@ -35,15 +54,16 @@ class Button:
             self.color = self.starting_color
     
     def render(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
+        pygame.gfxdraw.box(surface, self.rect, (*self.color, self.alpha))
         if self.outline:
             pygame.draw.rect(surface, self.outline_color, self.rect, 1)
-        if not (self.text is None):
+        if self.text is not None:
             surface.blit(self.text, self.text_rect)
 
 
+
 # A simple icon class which is meant to be a button but with an image.
-class Icon(object):
+class Icon:
     def __init__(self, pos, width, height, image, command=lambda: print("Hello World"), outline=True, outline_color=(0, 0, 0)):
         # The Rect attrs, image, and command
         self.pos = pygame.math.Vector2(pos)
@@ -55,7 +75,7 @@ class Icon(object):
         self.outline_color = outline_color
         self.command = command
     
-    def check_input(self, mouse_pos):
+    def check_press(self, mouse_pos):
         if self.rect.collidepoint(mouse_pos):
             self.command()
             
@@ -66,13 +86,11 @@ class Icon(object):
         
 
 
-# Basically a button but no hovering and no text.
-# Yes, I understand rect's aren't meant for drawing but i dont have the current brain power to do the math to get topleft from x and width.
-class CheckBox(object):
+# A box which can be filled to indicate something. Able to recieve input.
+class CheckBox:
     def __init__(self, pos, width, height, color=(255, 255, 255), filled_color=(124, 124, 124), marked_color=(255, 0, 255), outline=True, outline_color=(0, 0, 0)):
         self.pos = pygame.math.Vector2(pos)
-        self.rect = pygame.Rect(self.pos[0], self.pos[1], width, height)
-        self.rect.topleft = (self.pos[0], self.pos[1])
+        self.rect = pygame.Rect(*self.pos, width, height)
         
         self.default_color = color
         self.color = color
@@ -99,28 +117,37 @@ class CheckBox(object):
 
 
 
-# Idk why im trying to add a label. I just am.
+# Label that can be placed on a surface and updated.
 class Label:
-    def __init__(self, pos, text, text_size, text_color=(0, 0, 0), bg_color=None, bold=False, italic=False):
+    def __init__(self, pos, text, text_size, text_color=(0, 0, 0), bg_color=None, anti_alias=True, bold=False, italic=False, alpha=255):
+        self.pos = pygame.math.Vector2(pos)
+        self.alpha = alpha
         
-        self.pos = Vector2(pos)
-        font = pygame.font.SysFont("Arial", text_size, bold, italic)
-        self.text = font.render(text, True, text_color, bg_color)
+        self.text_color = text_color
+        self.bg_color = bg_color
+        
+        self.anti_alias = anti_alias
+        self.font = pygame.font.SysFont("Arial", text_size, bold, italic)
+        self.text = font.render(text, self.anti_alias, self.text_color, self.bg_color)
         self.rect = self.text.get_rect(topleft=self.pos)
+        
+    def update_text(self, text):
+        self.text = self.font.render(text, self.anti_alias, self.text_color, self.bg_color)
     
     def render(self, surface):
+        self.text.set_alpha(self.alpha)
         surface.blit(self.text, self.rect)
 
 
 
-# Very useful in so many games. Def an add. Crude. Not circular.
+# A bar that is meant to track a value. Can be updated, and drawn unto a surface.
 class Bar:
     def __init__(self, pos, value, scale, height, outline=True, outline_color=(0, 0, 0), bar_color=(57, 255, 60), color_under=pygame.Color('red')):
         self.pos = pygame.math.Vector2(pos)
         self.value = value
         self.scale = scale
-        self.rect = pygame.Rect(self.pos[0], self.pos[1], value*self.scale, height)
-        self.bar_rect = pygame.Rect(self.pos[0], self.pos[1], value*self.scale, height)
+        self.rect = pygame.Rect(*self.pos, value * self.scale, height)
+        self.bar_rect = pygame.Rect(*self.pos, value * self.scale, height)
         
         self.outline = outline
         self.outline_color = outline_color
@@ -138,6 +165,18 @@ class Bar:
 
 
 
-# The elliposde version of bar.
-class CustomBar:
-    pass
+# Backdrop is a way to create a semi-transperant background easily. 
+class Backdrop:
+    def __init__(self, pos, width, height, border_radius, color, alpha=255):
+        self.alpha = alpha
+        
+        self.size = (width, height)
+        
+        self.pos = pygame.math.Vector2(pos)
+        self.rect = pygame.Rect(*pos, *self.size)
+        
+        self.border_radius = border_radius
+        self.color = (*color, self.alpha)
+        
+    def render(self, surface):
+        pygame.gfxdraw.box(surface, self.rect, self.color)
