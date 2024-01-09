@@ -128,7 +128,7 @@ class Label:
         
         self.anti_alias = anti_alias
         self.font = pygame.font.SysFont("Arial", text_size, bold, italic)
-        self.text = font.render(text, self.anti_alias, self.text_color, self.bg_color)
+        self.text = self.font.render(text, self.anti_alias, self.text_color, self.bg_color)
         self.rect = self.text.get_rect(topleft=self.pos)
         
     def update_text(self, text):
@@ -167,16 +167,24 @@ class Bar:
 
 # Backdrop is a way to create a semi-transperant background easily. 
 class Backdrop:
-    def __init__(self, pos, width, height, border_radius, color, alpha=255):
-        self.alpha = alpha
-        
-        self.size = (width, height)
+    def __init__(self, pos, size, image=None, color=(0, 0, 0), alpha=255):
+        self.size = size
         
         self.pos = pygame.math.Vector2(pos)
-        self.rect = pygame.Rect(*pos, *self.size)
         
-        self.border_radius = border_radius
-        self.color = (*color, self.alpha)
+        self.image_name = image
+        
+        if self.image_name is not None:
+            self.image = pygame.transform.scale(pygame.image.load(self.image_name).convert_alpha(), self.size)
+        else:
+            self.alpha = alpha
+            self.rect = pygame.Rect(*pos, *self.size)
+            self.color = (*color, self.alpha)
+        
         
     def render(self, surface):
-        pygame.gfxdraw.box(surface, self.rect, self.color)
+        if self.image_name is not None:
+            surface.blit(self.image, self.pos)
+        else:
+            pygame.gfxdraw.box(surface, self.rect, self.color)
+            
